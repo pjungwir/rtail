@@ -4,4 +4,5 @@
 - make task to build .deb file
 - more options!
   - ssh -v
+- support multiple -f options to tail several files on each host
 

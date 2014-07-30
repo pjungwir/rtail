@@ -85,7 +85,6 @@ for (( i=0; i<${#hosts[@]}; i++ )); do
   f="$(filename_part "$h")"
   h="$(host_part "$h")"
   if [ -z "$f" ]; then f="$filename"; fi
-  echo ssh "$h" tail -f "$f"
   ssh "$h" tail -f "$f" &
   pids+=($!)
 done
