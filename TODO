@@ -1,0 +1,7 @@
+- tests
+- man page
+- Makefile for `make install`
+- make task to build .deb file
+- more options!
+  - ssh -v
+
