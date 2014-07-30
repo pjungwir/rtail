@@ -1,0 +1,94 @@
+#!/bin/bash
+
+set -eu
+
+filename=""
+hosts=()
+pids=()
+
+function usage {
+  echo "USAGE: rtail -f <file> <host> [<host>...]"
+  echo "   or: rtail <host:file> [<host:file>...]"
+}
+
+function fail {
+  echo "$@" 1>&2;
+  exit 1
+}
+
+function host_part {
+  echo "$1" | sed 's/:.*$//'
+}
+
+function filename_part {
+  echo "$1" | sed 's/^[^:]*\(:\|\)//'
+}
+
+function handle_options {
+  while getopts :hf: opt; do
+    case $opt in
+      h)
+        usage
+        exit 0;
+        ;;
+      f)
+        if [ -z "$filename" ]; then
+          filename="$OPTARG";
+        else
+          fail "rtail: please use -f only once"
+          # usage
+          exit 1;
+        fi
+        ;;
+      \?)
+        fail "rtail: invalid option: -$OPTARG"
+        ;;
+    esac
+  done
+
+  shift $(($OPTIND - 1))
+
+  while (( "$#" )); do
+    h="$1"
+    if [ -z "$filename" ]; then
+      if [ -z "$(filename_part "$h")" ]; then
+        fail "rtail: no filename for $h"
+      fi
+    fi
+    if [ -z "$(host_part "$h")" ]; then
+      fail "rtail: no host for $h"
+    fi
+    hosts+=("$h")
+    shift;
+  done;
+
+  if [ ${#hosts[@]} -eq 0 ]; then
+    fail "rtail: no hosts specified"
+  fi
+}
+
+function wait_for_control_c {
+  while read; do
+    false;
+  done
+}
+
+function finish {
+  kill ${pids[*]}
+}
+
+handle_options "$@"
+trap finish EXIT
+
+for (( i=0; i<${#hosts[@]}; i++ )); do
+  h="${hosts[$i]}"
+  f="$(filename_part "$h")"
+  h="$(host_part "$h")"
+  if [ -z "$f" ]; then f="$filename"; fi
+  echo ssh "$h" tail -f "$f"
+  ssh "$h" tail -f "$f" &
+  pids+=($!)
+done
+
+wait_for_control_c
+
