@@ -68,8 +68,8 @@ function handle_options {
 }
 
 function wait_for_control_c {
-  while read; do
-    false;
+  while true; do
+    read;
   done
 }
 
